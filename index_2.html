@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Мои страны</title>
+
+<style>
+  :root{
+    --bg:#F5F6F8;
+    --surface:#FFFFFF;
+    --surface-2:#EEF0F3;
+    --text:#14171A;
+    --text-2:#6B7280;
+    --accent:#2AABEE;
+    --accent-2:#1B7FB4;
+    --accent-ink:#FFFFFF;
+    --danger:#E5484D;
+    --border:#E4E7EB;
+    --shadow: 0 2px 10px rgba(20,23,26,0.12);
+    --hint:#8E97A3;
+    --map-land:#D7DCE3;
+    --map-border:#F5F6F8;
+    --map-scrim: rgba(20,23,26,.55);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0E1014;
+      --surface:#1B1E24;
+      --surface-2:#242832;
+      --text:#F2F3F5;
+      --text-2:#9AA2AE;
+      --accent:#3FB6F4;
+      --accent-2:#2C87B8;
+      --accent-ink:#0B0E13;
+      --danger:#F1706F;
+      --border:#2B2F38;
+      --shadow: 0 2px 14px rgba(0,0,0,0.5);
+      --hint:#7C8592;
+      --map-land:#2A2E37;
+      --map-border:#0E1014;
+      --map-scrim: rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0E1014;
+    --surface:#1B1E24;
+    --surface-2:#242832;
+    --text:#F2F3F5;
+    --text-2:#9AA2AE;
+    --accent:#3FB6F4;
+    --accent-2:#2C87B8;
+    --accent-ink:#0B0E13;
+    --danger:#F1706F;
+    --border:#2B2F38;
+    --shadow: 0 2px 14px rgba(0,0,0,0.5);
+    --hint:#7C8592;
+    --map-land:#2A2E37;
+    --map-border:#0E1014;
+    --map-scrim: rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  .num{ font-variant-numeric:tabular-nums; }
+  [hidden]{ display:none!important; }
+
+  /* ================= jsVectorMap base styles (inlined, CDN stylesheet not permitted) ================= */
+  .jvm-container{position:relative;height:100%;width:100%;-webkit-user-select:none;user-select:none;}
+  .jvm-tooltip{border-radius:8px;background-color:var(--surface);color:var(--text);font-size:13px;font-weight:600;box-shadow:var(--shadow);padding:6px 10px;white-space:nowrap;position:absolute;display:none;border:1px solid var(--border);pointer-events:none;}
+  .jvm-tooltip.active{display:block;}
+  image,text{ -webkit-user-select:none; user-select:none; }
+
+  /* ================= app shell ================= */
+  #app{ position:relative; height:100dvh; width:100%; overflow:hidden; }
+
+  #mapWrap{
+    position:absolute; inset:0;
+    background:var(--bg);
+  }
+  #map{ position:absolute; inset:0; }
+
+  /* ================= HUD (top stat pill) ================= */
+  .hud{
+    position:absolute;
+    top:calc(env(safe-area-inset-top,0px) + 12px);
+    left:16px; right:16px;
+    z-index:5;
+    display:flex;
+    justify-content:center;
+    pointer-events:none;
+  }
+  .hud-pill{
+    pointer-events:auto;
+    background:var(--surface);
+    box-shadow:var(--shadow);
+    border-radius:999px;
+    padding:8px 16px 8px 8px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    max-width:100%;
+  }
+  .hud-ring{ flex:none; }
+  .hud-text{ display:flex; flex-direction:column; line-height:1.15; }
+  .hud-text b{ font-size:14px; font-weight:800; }
+  .hud-text span{ font-size:11px; color:var(--text-2); font-weight:600; }
+
+  /* ================= bottom controls ================= */
+  .bottom-row{
+    position:absolute;
+    left:16px; right:16px;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 16px);
+    z-index:5;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .bottom-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+  .pill-btn{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--surface);
+    color:var(--text);
+    border:0;
+    border-radius:999px;
+    padding:12px 18px;
+    font-size:15px;
+    font-weight:700;
+    box-shadow:var(--shadow);
+    font-family:inherit;
+    flex:none;
+  }
+  .donate-btn{
+    flex:none;
+    width:44px; height:44px;
+    border-radius:50%;
+    background:var(--surface);
+    border:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:var(--shadow);
+    font-size:21px;
+    line-height:1;
+  }
+  .donate-btn:active{ transform:scale(.94); }
+  .fab{
+    flex:none;
+    width:56px; height:56px;
+    border-radius:50%;
+    background:var(--accent);
+    color:var(--accent-ink);
+    border:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:var(--shadow);
+  }
+
+  /* ================= list overlay (Страны) ================= */
+  .overlay{
+    position:absolute; inset:0;
+    background:var(--bg);
+    z-index:20;
+    transform:translateY(100%);
+    transition:transform .3s cubic-bezier(.32,.72,0,1);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .overlay.open{ transform:translateY(0); }
+  .ov-top{
+    flex:none;
+    padding:calc(env(safe-area-inset-top,0px) + 12px) 16px 10px;
+  }
+  .ov-title-row{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .ov-title-row h2{ margin:0; font-size:19px; font-weight:800; flex:1; }
+  .search{
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface-2);
+    border-radius:12px; padding:9px 12px;
+  }
+  .search svg{ flex:none; opacity:.55; }
+  .search input{ border:0; outline:0; background:transparent; color:var(--text); font-size:16px; width:100%; font-family:inherit; }
+  .search input::placeholder{ color:var(--hint); }
+  .ov-scroll{ flex:1; overflow-y:auto; padding:4px 16px 24px; -webkit-overflow-scrolling:touch; }
+  .group{ margin-top:16px; }
+  .group h3{ font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-2); margin:0 4px 8px; display:flex; justify-content:space-between; }
+  .group h3 b{ color:var(--text); font-weight:700; }
+  .card{ background:var(--surface); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
+  .row{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid var(--border); }
+  .row:last-child{ border-bottom:0; }
+  .row .flag{ font-size:22px; line-height:1; flex:none; }
+  .row .name{ flex:1; min-width:0; font-size:15px; font-weight:500; }
+  .row .badge{ flex:none; display:flex; align-items:center; gap:3px; color:var(--accent); font-size:13px; font-weight:700; }
+  .row .chev{ flex:none; opacity:.35; }
+  .empty{ text-align:center; color:var(--text-2); padding:40px 20px; font-size:14px; }
+
+  /* ================= detail overlay ================= */
+  #detail{ z-index:25; }
+  .d-top{ display:flex; align-items:center; gap:8px; padding:calc(env(safe-area-inset-top,0px) + 10px) 8px 4px; flex:none; }
+  .iconbtn{ border:0; background:var(--surface-2); color:var(--text); width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
+  .d-scroll{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:24px; }
+  .d-hero{ display:flex; align-items:center; gap:14px; padding:8px 20px 18px; }
+  .d-hero .flag{ font-size:50px; }
+  .d-hero h2{ margin:0; font-size:21px; font-weight:800; }
+  .d-hero p{ margin:2px 0 0; color:var(--text-2); font-size:14px; }
+  .addbtn{
+    margin:0 20px 18px; background:var(--accent); color:var(--accent-ink); border:0; border-radius:14px;
+    padding:13px 16px; font-size:16px; font-weight:700; width:calc(100% - 40px);
+    display:flex; align-items:center; justify-content:center; gap:8px; font-family:inherit;
+  }
+  .visits{ padding:0 20px; }
+  .visits h4{ font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-2); margin:0 0 8px 2px; }
+  .visit{ display:flex; align-items:center; gap:12px; background:var(--surface); border-radius:14px; box-shadow:var(--shadow); padding:12px 14px; margin-bottom:10px; }
+  .visit .vdot{ flex:none; width:8px; height:8px; border-radius:50%; background:var(--accent); }
+  .visit .vbody{ flex:1; min-width:0; }
+  .visit .vdate{ font-size:15px; font-weight:700; }
+  .visit .vnote{ font-size:13px; color:var(--text-2); margin-top:2px; word-break:break-word; }
+  .visit .del{ flex:none; border:0; background:transparent; color:var(--danger); width:30px; height:30px; display:flex; align-items:center; justify-content:center; }
+
+  /* ================= add-visit sheet ================= */
+  .scrim{ position:fixed; inset:0; background:var(--map-scrim); z-index:40; opacity:0; pointer-events:none; transition:opacity .2s ease; }
+  .scrim.open{ opacity:1; pointer-events:auto; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; background:var(--surface);
+    border-radius:20px 20px 0 0; z-index:41;
+    padding:14px 20px calc(20px + env(safe-area-inset-bottom,0px));
+    transform:translateY(100%); transition:transform .28s cubic-bezier(.32,.72,0,1);
+    box-shadow:0 -4px 24px rgba(0,0,0,.2);
+    max-height:88dvh; overflow-y:auto;
+  }
+  .sheet.open{ transform:translateY(0); }
+  .sheet-handle{ width:36px; height:4px; border-radius:2px; background:var(--border); margin:0 auto 14px; }
+  .sheet h3{ margin:0 0 14px; font-size:17px; font-weight:800; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--text-2); margin-bottom:6px; }
+  .field .two{ display:flex; gap:10px; }
+  select,input[type="date"],input[type="time"],input[type="text"]{
+    width:100%; border:1px solid var(--border); background:var(--surface-2); color:var(--text);
+    border-radius:11px; padding:11px 12px; font-size:16px; font-family:inherit; outline:0;
+    appearance:none; -webkit-appearance:none;
+  }
+  select{
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'><path d='M6 9l6 6 6-6' stroke='%238E97A3' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat; background-position:right 12px center; padding-right:34px;
+  }
+  .sheet-actions{ display:flex; gap:10px; margin-top:4px; }
+  .btn{ flex:1; border:0; border-radius:12px; padding:13px; font-size:15px; font-weight:700; font-family:inherit; }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); }
+  .btn.ghost{ background:var(--surface-2); color:var(--text); }
+
+  .toast{
+    position:absolute; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 90px);
+    transform:translate(-50%,10px); background:var(--surface); color:var(--text);
+    padding:10px 16px; border-radius:12px; box-shadow:var(--shadow); font-size:14px; font-weight:600;
+    z-index:50; opacity:0; pointer-events:none; transition:all .25s ease;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+
+  .banner{
+    position:absolute; left:16px; right:16px; top:calc(env(safe-area-inset-top,0px) + 60px);
+    background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 12px;
+    font-size:13px; color:var(--text-2); z-index:6; box-shadow:var(--shadow);
+  }
+</style>
+</head>
+<body>
+
+
+<div id="app">
+  <div id="mapWrap">
+    <div id="map"></div>
+    <div class="banner" id="mapBanner" hidden>Карта загружается… если не появится, список стран всё равно доступен по кнопке «Страны».</div>
+  </div>
+
+  <div class="hud">
+    <div class="hud-pill">
+      <svg class="hud-ring" width="34" height="34" viewBox="0 0 34 34">
+        <circle cx="17" cy="17" r="14" fill="none" stroke="var(--surface-2)" stroke-width="4"/>
+        <circle id="ringProgress" cx="17" cy="17" r="14" fill="none" stroke="var(--accent)" stroke-width="4"
+          stroke-linecap="round" stroke-dasharray="88" stroke-dashoffset="88" transform="rotate(-90 17 17)"/>
+      </svg>
+      <div class="hud-text">
+        <b><span id="visitedCount" class="num">0</span> / <span id="totalCount" class="num">196</span></b>
+        <span id="hudPct">0% мира</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-row">
+    <div class="bottom-left">
+      <button class="pill-btn" id="openListBtn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M3 12h18M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9z" stroke="currentColor" stroke-width="2"/></svg>
+        Страны
+      </button>
+      <button class="donate-btn" id="donateBtn" aria-label="Угостить пончиком">🍩</button>
+    </div>
+    <button class="fab" id="fabAdd" aria-label="Добавить поездку">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <!-- ===== список стран ===== -->
+  <div class="overlay" id="listOverlay">
+    <div class="ov-top">
+      <div class="ov-title-row">
+        <button class="iconbtn" id="closeListBtn" aria-label="Закрыть">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
+        <h2>Все страны</h2>
+      </div>
+      <div class="search">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="search" type="text" placeholder="Поиск страны" autocomplete="off" />
+      </div>
+    </div>
+    <div class="ov-scroll" id="list"></div>
+  </div>
+
+  <!-- ===== детали страны ===== -->
+  <div class="overlay" id="detail">
+    <div class="d-top">
+      <button class="iconbtn" id="backBtn" aria-label="Назад">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="d-scroll">
+      <div class="d-hero">
+        <div class="flag" id="dFlag">🏳️</div>
+        <div>
+          <h2 id="dName">—</h2>
+          <p id="dContinent">—</p>
+        </div>
+      </div>
+      <button class="addbtn" id="addVisitBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        Добавить поездку
+      </button>
+      <div class="visits">
+        <h4 id="visitsTitle">Поездки</h4>
+        <div id="visitsList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="sheet-handle"></div>
+  <h3>Новая поездка</h3>
+  <div class="field">
+    <label for="vCountry">Страна</label>
+    <select id="vCountry"></select>
+  </div>
+  <div class="field">
+    <label for="vDate">Дата и время</label>
+    <div class="two">
+      <input type="date" id="vDate" />
+      <input type="time" id="vTime" />
+    </div>
+  </div>
+  <div class="field">
+    <label for="vNote">Заметка</label>
+    <input type="text" id="vNote" placeholder="Например: Москва, отпуск" />
+  </div>
+  <div class="sheet-actions">
+    <button class="btn ghost" id="cancelBtn">Отмена</button>
+    <button class="btn primary" id="saveBtn">Сохранить</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<!-- jsVectorMap: интерактивная карта мира, страны кодируются по ISO alpha-2 -->
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.7.0/dist/jsvectormap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.7.0/dist/maps/world.js"></script>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= Telegram WebApp integration ================= */
+  var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+  if (tg) {
+    try {
+      tg.ready();
+      tg.expand();
+      applyTelegramTheme();
+      tg.onEvent('themeChanged', function(){ applyTelegramTheme(); paintMap(); });
+    } catch (e) {}
+  }
+  function applyTelegramTheme(){
+    if (!tg || !tg.themeParams) return;
+    var p = tg.themeParams;
+    var root = document.documentElement.style;
+    if (p.bg_color) root.setProperty('--bg', p.bg_color);
+    if (p.secondary_bg_color) root.setProperty('--surface-2', p.secondary_bg_color);
+    if (p.section_bg_color) root.setProperty('--surface', p.section_bg_color);
+    else if (p.bg_color) root.setProperty('--surface', p.bg_color);
+    if (p.text_color) root.setProperty('--text', p.text_color);
+    if (p.hint_color) { root.setProperty('--text-2', p.hint_color); root.setProperty('--hint', p.hint_color); }
+    if (p.button_color) root.setProperty('--accent', p.button_color);
+    if (p.button_text_color) root.setProperty('--accent-ink', p.button_text_color);
+    try {
+      tg.setHeaderColor(p.bg_color || '#0E1014');
+      tg.setBackgroundColor(p.bg_color || '#0E1014');
+    } catch(e) {}
+  }
+
+  /* ================= донат через Telegram Stars =================
+     Ссылка создаётся один раз через Bot API методом createInvoiceLink
+     (см. инструкцию, которую дал Claude) и подставляется сюда. */
+  var DONATE_INVOICE_LINK = "https://t.me/$JYGXmNrPkEl9HgAAljXJ6TGEeSA"; // например: "https://t.me/$aBcDeFgHiJkLmN"
+
+  /* ================= storage: Telegram CloudStorage w/ localStorage fallback ================= */
+  var STORE_KEY = 'country_visits_v1';
+  var storage = {
+    load: function(cb){
+      if (tg && tg.CloudStorage) {
+        tg.CloudStorage.getItem(STORE_KEY, function(err, value){
+          if (err || !value) { cb(fallbackLoad()); return; }
+          try { cb(JSON.parse(value)); } catch(e){ cb(fallbackLoad()); }
+        });
+      } else {
+        cb(fallbackLoad());
+      }
+    },
+    save: function(data){
+      var json = JSON.stringify(data);
+      try { localStorage.setItem(STORE_KEY, json); } catch(e){}
+      if (tg && tg.CloudStorage) {
+        try { tg.CloudStorage.setItem(STORE_KEY, json, function(){}); } catch(e){}
+      }
+    }
+  };
+  function fallbackLoad(){
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e){ return []; }
+  }
+
+  /* ================= country data ================= */
+  var CONTINENTS = { eu:"Европа", as:"Азия", af:"Африка", na:"Северная Америка", sa:"Южная Америка", oc:"Океания" };
+  var CONTINENT_ORDER = ["eu","as","af","na","sa","oc"];
+
+  var COUNTRIES = [
+    ["AD","Андорра","eu"],["AL","Албания","eu"],["AT","Австрия","eu"],["BA","Босния и Герцеговина","eu"],
+    ["BE","Бельгия","eu"],["BG","Болгария","eu"],["BY","Беларусь","eu"],["CH","Швейцария","eu"],
+    ["CY","Кипр","eu"],["CZ","Чехия","eu"],["DE","Германия","eu"],["DK","Дания","eu"],
+    ["EE","Эстония","eu"],["ES","Испания","eu"],["FI","Финляндия","eu"],["FR","Франция","eu"],
+    ["GB","Великобритания","eu"],["GR","Греция","eu"],["HR","Хорватия","eu"],["HU","Венгрия","eu"],
+    ["IE","Ирландия","eu"],["IS","Исландия","eu"],["IT","Италия","eu"],["LI","Лихтенштейн","eu"],
+    ["LT","Литва","eu"],["LU","Люксембург","eu"],["LV","Латвия","eu"],["MC","Монако","eu"],
+    ["MD","Молдова","eu"],["ME","Черногория","eu"],["MK","Северная Македония","eu"],["MT","Мальта","eu"],
+    ["NL","Нидерланды","eu"],["NO","Норвегия","eu"],["PL","Польша","eu"],["PT","Португалия","eu"],
+    ["RO","Румыния","eu"],["RS","Сербия","eu"],["RU","Россия","eu"],["SE","Швеция","eu"],
+    ["SI","Словения","eu"],["SK","Словакия","eu"],["SM","Сан-Марино","eu"],["UA","Украина","eu"],["VA","Ватикан","eu"],
+
+    ["AE","ОАЭ","as"],["AF","Афганистан","as"],["AM","Армения","as"],["AZ","Азербайджан","as"],
+    ["BD","Бангладеш","as"],["BH","Бахрейн","as"],["BN","Бруней","as"],["BT","Бутан","as"],
+    ["CN","Китай","as"],["GE","Грузия","as"],["ID","Индонезия","as"],["IL","Израиль","as"],
+    ["IN","Индия","as"],["IQ","Ирак","as"],["IR","Иран","as"],["JO","Иордания","as"],
+    ["JP","Япония","as"],["KG","Киргизия","as"],["KH","Камбоджа","as"],["KP","Северная Корея","as"],
+    ["KR","Южная Корея","as"],["KW","Кувейт","as"],["KZ","Казахстан","as"],["LA","Лаос","as"],
+    ["LB","Ливан","as"],["LK","Шри-Ланка","as"],["MM","Мьянма","as"],["MN","Монголия","as"],
+    ["MV","Мальдивы","as"],["MY","Малайзия","as"],["NP","Непал","as"],["OM","Оман","as"],
+    ["PH","Филиппины","as"],["PK","Пакистан","as"],["PS","Палестина","as"],["QA","Катар","as"],
+    ["SA","Саудовская Аравия","as"],["SG","Сингапур","as"],["SY","Сирия","as"],["TH","Таиланд","as"],
+    ["TJ","Таджикистан","as"],["TL","Восточный Тимор","as"],["TM","Туркменистан","as"],["TR","Турция","as"],
+    ["TW","Тайвань","as"],["UZ","Узбекистан","as"],["VN","Вьетнам","as"],["YE","Йемен","as"],
+
+    ["AO","Ангола","af"],["BF","Буркина-Фасо","af"],["BI","Бурунди","af"],["BJ","Бенин","af"],
+    ["BW","Ботсвана","af"],["CD","ДР Конго","af"],["CF","ЦАР","af"],["CG","Республика Конго","af"],
+    ["CI","Кот-д'Ивуар","af"],["CM","Камерун","af"],["CV","Кабо-Верде","af"],["DJ","Джибути","af"],
+    ["DZ","Алжир","af"],["EG","Египет","af"],["ER","Эритрея","af"],["ET","Эфиопия","af"],
+    ["GA","Габон","af"],["GH","Гана","af"],["GM","Гамбия","af"],["GN","Гвинея","af"],
+    ["GQ","Экваториальная Гвинея","af"],["GW","Гвинея-Бисау","af"],["KE","Кения","af"],["KM","Коморы","af"],
+    ["LR","Либерия","af"],["LS","Лесото","af"],["LY","Ливия","af"],["MA","Марокко","af"],
+    ["MG","Мадагаскар","af"],["ML","Мали","af"],["MR","Мавритания","af"],["MU","Маврикий","af"],
+    ["MW","Малави","af"],["MZ","Мозамбик","af"],["NA","Намибия","af"],["NE","Нигер","af"],
+    ["NG","Нигерия","af"],["RW","Руанда","af"],["SC","Сейшелы","af"],["SD","Судан","af"],
+    ["SL","Сьерра-Леоне","af"],["SN","Сенегал","af"],["SO","Сомали","af"],["SS","Южный Судан","af"],
+    ["ST","Сан-Томе и Принсипи","af"],["SZ","Эсватини","af"],["TD","Чад","af"],["TG","Того","af"],
+    ["TN","Тунис","af"],["TZ","Танзания","af"],["UG","Уганда","af"],["ZA","ЮАР","af"],
+    ["ZM","Замбия","af"],["ZW","Зимбабве","af"],
+
+    ["AG","Антигуа и Барбуда","na"],["BS","Багамы","na"],["BB","Барбадос","na"],["BZ","Белиз","na"],
+    ["CA","Канада","na"],["CR","Коста-Рика","na"],["CU","Куба","na"],["DM","Доминика","na"],
+    ["DO","Доминиканская Республика","na"],["GD","Гренада","na"],["GT","Гватемала","na"],["HN","Гондурас","na"],
+    ["HT","Гаити","na"],["JM","Ямайка","na"],["KN","Сент-Китс и Невис","na"],["LC","Сент-Люсия","na"],
+    ["MX","Мексика","na"],["NI","Никарагуа","na"],["PA","Панама","na"],["SV","Сальвадор","na"],
+    ["TT","Тринидад и Тобаго","na"],["US","США","na"],["VC","Сент-Винсент и Гренадины","na"],
+
+    ["AR","Аргентина","sa"],["BO","Боливия","sa"],["BR","Бразилия","sa"],["CL","Чили","sa"],
+    ["CO","Колумбия","sa"],["EC","Эквадор","sa"],["GY","Гайана","sa"],["PY","Парагвай","sa"],
+    ["PE","Перу","sa"],["SR","Суринам","sa"],["UY","Уругвай","sa"],["VE","Венесуэла","sa"],
+
+    ["AU","Австралия","oc"],["FJ","Фиджи","oc"],["FM","Микронезия","oc"],["KI","Кирибати","oc"],
+    ["MH","Маршалловы острова","oc"],["NR","Науру","oc"],["NZ","Новая Зеландия","oc"],["PG","Папуа — Новая Гвинея","oc"],
+    ["PW","Палау","oc"],["SB","Соломоновы Острова","oc"],["TO","Тонга","oc"],["TV","Тувалу","oc"],
+    ["VU","Вануату","oc"],["WS","Самоа","oc"]
+  ].map(function(c){ return { code:c[0], name:c[1], cont:c[2] }; });
+
+  var COUNTRY_BY_CODE = {};
+  COUNTRIES.forEach(function(c){ COUNTRY_BY_CODE[c.code] = c; });
+
+  function flagOf(code){
+    return String.fromCodePoint.apply(null, [].concat.apply([], [...code].map(function(ch){ return [127397 + ch.charCodeAt(0)]; })));
+  }
+
+  /* ================= state ================= */
+  var visits = [];
+  var query = '';
+  var currentCode = null;
+
+  function visitsByCode(code){
+    return visits.filter(function(v){ return v.code === code; }).sort(function(a,b){ return b.ts - a.ts; });
+  }
+  function visitedCounts(){
+    var set = {};
+    visits.forEach(function(v){ set[v.code] = (set[v.code]||0) + 1; });
+    return set;
+  }
+
+  /* ================= HUD ================= */
+  function renderHud(){
+    var counts = visitedCounts();
+    var visitedTotal = Object.keys(counts).length;
+    var total = COUNTRIES.length;
+    var pct = total ? Math.round((visitedTotal/total)*100) : 0;
+    document.getElementById('visitedCount').textContent = visitedTotal;
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('hudPct').textContent = pct + '% мира';
+    var c = 2 * Math.PI * 14;
+    document.getElementById('ringProgress').style.strokeDasharray = c;
+    document.getElementById('ringProgress').style.strokeDashoffset = c - (c * pct/100);
+  }
+
+  /* ================= map ================= */
+  var map = null;
+  var mapReady = false;
+
+  function resolvedColor(varName){
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || undefined;
+  }
+
+  function initMap(){
+    if (typeof window.jsVectorMap === 'undefined') {
+      document.getElementById('mapBanner').hidden = false;
+      return;
+    }
+    try {
+      map = new window.jsVectorMap({
+        selector: '#map',
+        map: 'world',
+        zoomButtons: false,
+        zoomOnScroll: true,
+        zoomOnScrollSpeed: 3,
+        panOnDrag: true,
+        showTooltip: true,
+        regionStyle: {
+          initial: { fill: resolvedColor('--map-land'), stroke: resolvedColor('--map-border'), strokeWidth: 0.6 },
+          hover: { fill: resolvedColor('--accent'), fillOpacity: 0.75, cursor: 'pointer' },
+          selected: { fill: resolvedColor('--accent') }
+        },
+        series: { regions: [{ attribute: 'fill', values: {} }] },
+        onRegionTooltipShow: function(event, tooltip, code){
+          var c = COUNTRY_BY_CODE[code];
+          if (c) tooltip.text(flagOf(c.code) + ' ' + c.name, false);
+        },
+        onRegionClick: function(event, code){
+          if (COUNTRY_BY_CODE[code]) openDetail(code);
+        }
+      });
+      mapReady = true;
+      paintMap();
+    } catch(e){
+      document.getElementById('mapBanner').hidden = false;
+    }
+  }
+
+  function paintMap(){
+    if (!mapReady || !map || !map.series || !map.series.regions || !map.series.regions[0]) return;
+    var counts = visitedCounts();
+    var values = {};
+    Object.keys(counts).forEach(function(code){
+      values[code] = counts[code] > 1 ? resolvedColor('--accent-2') : resolvedColor('--accent');
+    });
+    try {
+      map.series.regions[0].setValues(values);
+      map.regionStyle = map.regionStyle || {};
+    } catch(e){}
+    try {
+      map.params.regionStyle.initial.fill = resolvedColor('--map-land');
+      map.params.regionStyle.initial.stroke = resolvedColor('--map-border');
+    } catch(e){}
+  }
+
+  /* ================= list overlay ================= */
+  var listEl = document.getElementById('list');
+  var listOverlay = document.getElementById('listOverlay');
+
+  function renderList(){
+    var counts = visitedCounts();
+    var q = query.trim().toLowerCase();
+    var filtered = COUNTRIES.filter(function(c){ return !q || c.name.toLowerCase().indexOf(q) !== -1; });
+
+    listEl.innerHTML = '';
+    if (!filtered.length) {
+      var empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'Ничего не найдено';
+      listEl.appendChild(empty);
+      return;
+    }
+
+    CONTINENT_ORDER.forEach(function(key){
+      var items = filtered.filter(function(c){ return c.cont === key; });
+      if (!items.length) return;
+      var group = document.createElement('div');
+      group.className = 'group';
+      var visitedInGroup = items.filter(function(c){ return !!counts[c.code]; }).length;
+      var h3 = document.createElement('h3');
+      h3.innerHTML = CONTINENTS[key] + '<b>' + visitedInGroup + '/' + items.length + '</b>';
+      group.appendChild(h3);
+
+      var card = document.createElement('div');
+      card.className = 'card';
+      items.forEach(function(c){
+        var row = document.createElement('div');
+        row.className = 'row';
+        var vCount = counts[c.code] || 0;
+        row.innerHTML =
+          '<div class="flag">' + flagOf(c.code) + '</div>' +
+          '<div class="name">' + c.name + '</div>' +
+          (vCount ? '<div class="badge"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' + (vCount>1?'×'+vCount:'') + '</div>' : '') +
+          '<svg class="chev" width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        row.addEventListener('click', function(){ openDetail(c.code); });
+        card.appendChild(row);
+      });
+      group.appendChild(card);
+      listEl.appendChild(group);
+    });
+  }
+
+  document.getElementById('openListBtn').addEventListener('click', function(){
+    renderList();
+    listOverlay.classList.add('open');
+  });
+  document.getElementById('closeListBtn').addEventListener('click', function(){
+    listOverlay.classList.remove('open');
+  });
+  document.getElementById('search').addEventListener('input', function(e){
+    query = e.target.value;
+    renderList();
+  });
+
+  /* ================= detail overlay ================= */
+  var detailEl = document.getElementById('detail');
+
+  function openDetail(code){
+    currentCode = code;
+    var country = COUNTRY_BY_CODE[code];
+    document.getElementById('dFlag').textContent = flagOf(code);
+    document.getElementById('dName').textContent = country.name;
+    document.getElementById('dContinent').textContent = CONTINENTS[country.cont];
+    renderVisits();
+    detailEl.classList.add('open');
+    if (tg && tg.BackButton) { tg.BackButton.show(); tg.BackButton.onClick(closeDetail); }
+  }
+  function closeDetail(){
+    detailEl.classList.remove('open');
+    currentCode = null;
+    if (tg && tg.BackButton) { tg.BackButton.hide(); tg.BackButton.offClick(closeDetail); }
+  }
+  document.getElementById('backBtn').addEventListener('click', closeDetail);
+
+  function renderVisits(){
+    var list = visitsByCode(currentCode);
+    document.getElementById('visitsTitle').textContent = 'Поездки (' + list.length + ')';
+    var wrap = document.getElementById('visitsList');
+    wrap.innerHTML = '';
+    if (!list.length) {
+      var e = document.createElement('div');
+      e.className = 'empty';
+      e.style.padding = '16px 0';
+      e.textContent = 'Пока нет записей об этой стране';
+      wrap.appendChild(e);
+      return;
+    }
+    list.forEach(function(v){
+      var row = document.createElement('div');
+      row.className = 'visit';
+      var d = new Date(v.ts);
+      var dateStr = d.toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' });
+      var timeStr = d.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+      row.innerHTML =
+        '<div class="vdot"></div>' +
+        '<div class="vbody"><div class="vdate">' + dateStr + ', ' + timeStr + '</div>' +
+          (v.note ? '<div class="vnote"></div>' : '') + '</div>' +
+        '<button class="del" aria-label="Удалить"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-8 0l1 13a1 1 0 001 1h6a1 1 0 001-1l1-13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+      if (v.note) row.querySelector('.vnote').textContent = v.note;
+      row.querySelector('.del').addEventListener('click', function(){
+        visits = visits.filter(function(x){ return x.id !== v.id; });
+        storage.save(visits);
+        renderVisits(); renderHud(); paintMap();
+      });
+      wrap.appendChild(row);
+    });
+  }
+
+  document.getElementById('addVisitBtn').addEventListener('click', function(){ openSheet(currentCode); });
+
+  /* ================= add-visit sheet ================= */
+  var scrim = document.getElementById('scrim');
+  var sheet = document.getElementById('sheet');
+  var selectEl = document.getElementById('vCountry');
+
+  (function buildSelect(){
+    var placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Выберите страну…';
+    placeholder.disabled = true;
+    selectEl.appendChild(placeholder);
+    CONTINENT_ORDER.forEach(function(key){
+      var group = document.createElement('optgroup');
+      group.label = CONTINENTS[key];
+      COUNTRIES.filter(function(c){ return c.cont === key; }).forEach(function(c){
+        var opt = document.createElement('option');
+        opt.value = c.code;
+        opt.textContent = flagOf(c.code) + ' ' + c.name;
+        group.appendChild(opt);
+      });
+      selectEl.appendChild(group);
+    });
+  })();
+
+  function openSheet(prefillCode){
+    var now = new Date();
+    selectEl.value = prefillCode || '';
+    if (!selectEl.value) selectEl.selectedIndex = 0;
+    document.getElementById('vDate').value = now.toISOString().slice(0,10);
+    document.getElementById('vTime').value = now.toTimeString().slice(0,5);
+    document.getElementById('vNote').value = '';
+    scrim.classList.add('open');
+    sheet.classList.add('open');
+  }
+  function closeSheet(){
+    scrim.classList.remove('open');
+    sheet.classList.remove('open');
+  }
+  document.getElementById('fabAdd').addEventListener('click', function(){ openSheet(null); });
+  document.getElementById('cancelBtn').addEventListener('click', closeSheet);
+  scrim.addEventListener('click', closeSheet);
+
+  document.getElementById('donateBtn').addEventListener('click', function(){
+    if (!DONATE_INVOICE_LINK) {
+      showToast('Донат ещё не настроен');
+      return;
+    }
+    if (tg && tg.openInvoice) {
+      tg.openInvoice(DONATE_INVOICE_LINK, function(status){
+        if (status === 'paid') {
+          if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+          showToast('Спасибо за пончик! 🍩');
+        }
+      });
+    } else {
+      showToast('Донат доступен только внутри Telegram');
+    }
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', function(){
+    var code = selectEl.value;
+    var dateVal = document.getElementById('vDate').value;
+    var timeVal = document.getElementById('vTime').value || '00:00';
+    var note = document.getElementById('vNote').value.trim();
+    if (!code || !dateVal) {
+      if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+      showToast(!code ? 'Выберите страну' : 'Укажите дату');
+      return;
+    }
+    var ts = new Date(dateVal + 'T' + timeVal + ':00').getTime();
+    visits.push({ id: 'v' + Date.now() + Math.random().toString(36).slice(2,7), code: code, ts: ts, note: note });
+    storage.save(visits);
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    closeSheet();
+    renderHud();
+    paintMap();
+    if (listOverlay.classList.contains('open')) renderList();
+    if (currentCode === code) renderVisits();
+    var c = COUNTRY_BY_CODE[code];
+    showToast('Добавлено: ' + c.name);
+  });
+
+  var toastTimer = null;
+  function showToast(text){
+    var t = document.getElementById('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2200);
+  }
+
+  /* ================= boot ================= */
+  document.getElementById('totalCount').textContent = COUNTRIES.length;
+  initMap();
+  storage.load(function(data){
+    visits = Array.isArray(data) ? data : [];
+    renderHud();
+    paintMap();
+  });
+})();
+</script>
+
+</body>
+</html>
